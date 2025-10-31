@@ -1,0 +1,52 @@
+services:
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: false
+
+  # Controllers
+  Tourze\OpenAiHttpProxyBundle\Controller\:
+    resource: '../../Controller/'
+    tags: ['controller.service_arguments']
+
+  # Services
+  Tourze\OpenAiHttpProxyBundle\Service\:
+    resource: '../../Service/'
+
+  # Key Pool Service
+  Tourze\OpenAiHttpProxyBundle\Service\KeyPoolService:
+    arguments:
+      $strategy: '%env(string:PROXY_KEY_STRATEGY)%'
+
+  # Model Mapping Service
+  Tourze\OpenAiHttpProxyBundle\Service\ModelMappingService:
+    arguments:
+      $mappingConfig: '%open_ai_http_proxy.model_mappings%'
+
+  # Proxy Service
+  Tourze\OpenAiHttpProxyBundle\Service\ProxyService:
+    arguments:
+      $httpClient: '@http_client'
+
+  # Default Api Caller Service - 依赖 AccessKeyBundle 的 ApiCallerService
+  Tourze\OpenAiHttpProxyBundle\Service\DefaultApiCallerService:
+    arguments:
+      $accessKeyService: '@Tourze\AccessKeyBundle\Service\ApiCallerService'
+
+  # Api Caller Service alias
+  Tourze\OpenAiHttpProxyBundle\Service\ApiCallerService: '@Tourze\OpenAiHttpProxyBundle\Service\DefaultApiCallerService'
+
+  # Token Validation Service
+  Tourze\OpenAiHttpProxyBundle\Service\TokenValidationService:
+    arguments:
+      $apiCallerService: '@Tourze\OpenAiHttpProxyBundle\Service\ApiCallerService'
+
+  # Client Pool Manager
+  Tourze\OpenAiHttpProxyBundle\Service\Client\ClientPoolManager: ~
+
+  # Client Health Manager
+  Tourze\OpenAiHttpProxyBundle\Service\Client\ClientHealthManager: ~
+
+  # Client Stats Manager
+  Tourze\OpenAiHttpProxyBundle\Service\Client\ClientStatsManager: ~
