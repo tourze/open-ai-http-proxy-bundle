@@ -22,7 +22,7 @@
     "symfony/service-contracts": "^3.6",
     "symfony/string": "^7.3",
     "symfony/yaml": "^7.3",
-    "tourze/access-key-bundle": "0.1.*",
+    "tourze/access-key-bundle": "1.0.*",
     "tourze/bundle-dependency": "1.*",
     "tourze/http-forward-bundle": "0.0.*",
     "tourze/symfony-dependency-service-loader": "1.0.*",
