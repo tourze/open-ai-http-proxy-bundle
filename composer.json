@@ -24,7 +24,7 @@
     "symfony/yaml": "^7.3",
     "tourze/access-key-bundle": "1.0.*",
     "tourze/bundle-dependency": "1.*",
-    "tourze/http-forward-bundle": "0.0.*",
+    "tourze/http-forward-bundle": "1.0.*",
     "tourze/symfony-dependency-service-loader": "1.0.*",
     "tourze/symfony-routing-auto-loader-bundle": "1.0.*"
   },
