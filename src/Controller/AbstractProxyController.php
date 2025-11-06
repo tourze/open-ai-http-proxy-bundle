@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Service\Attribute\Required;
+use Tourze\OpenAiHttpProxyBundle\Model\TokenValidationContext;
 use Tourze\OpenAiHttpProxyBundle\Service\ProxyService;
 use Tourze\OpenAiHttpProxyBundle\Service\TokenValidationService;
 
@@ -36,10 +37,11 @@ abstract class AbstractProxyController extends AbstractController
     {
         $token = $this->validateToken($request);
         if (null === $token) {
-            return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+            return new JsonResponse(['error' => 'Unauthorized - Missing or invalid Authorization header'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $validation = $this->tokenValidator->validate($token);
+        $context = $this->createValidationContext($request);
+        $validation = $this->tokenValidator->validate($token, $context);
         if (!$validation->isValid()) {
             return new JsonResponse(['error' => $validation->getError()], Response::HTTP_UNAUTHORIZED);
         }
@@ -50,11 +52,78 @@ abstract class AbstractProxyController extends AbstractController
     protected function validateToken(Request $request): ?string
     {
         $authHeader = $request->headers->get('Authorization');
-        if (!is_string($authHeader) || !str_starts_with($authHeader, 'Bearer ')) {
+
+        // 严格验证Authorization header
+        if (!is_string($authHeader)) {
             return null;
         }
 
-        return substr($authHeader, 7);
+        // 去除前后空白字符
+        $authHeader = trim($authHeader);
+
+        // 检查Bearer前缀（大小写不敏感）
+        if (!preg_match('/^Bearer\s+/i', $authHeader)) {
+            return null;
+        }
+
+        // 提取token部分
+        $token = preg_replace('/^Bearer\s+/i', '', $authHeader);
+
+        // 基础格式验证
+        if (empty($token) || strlen($token) < 8) {
+            return null;
+        }
+
+        // 检查token是否包含危险字符
+        if (preg_match('/[\r\n\t]/', $token)) {
+            return null;
+        }
+
+        return $token;
+    }
+
+    /**
+     * 创建Token验证上下文
+     */
+    protected function createValidationContext(Request $request): TokenValidationContext
+    {
+        $timestamp = $this->extractTimestamp($request);
+        $nonce = $request->headers->get('X-Request-Nonce');
+        $userAgent = $request->headers->get('User-Agent');
+        $ipAddress = $request->getClientIp();
+
+        return new TokenValidationContext(
+            timestamp: $timestamp,
+            nonce: is_string($nonce) ? trim($nonce) : null,
+            userAgent: is_string($userAgent) ? substr($userAgent, 0, 500) : null, // 限制长度
+            ipAddress: $ipAddress
+        );
+    }
+
+    /**
+     * 从请求中提取时间戳
+     */
+    private function extractTimestamp(Request $request): ?int
+    {
+        // 优先使用X-Request-Timestamp头
+        $timestampHeader = $request->headers->get('X-Request-Timestamp');
+        if (is_string($timestampHeader)) {
+            $timestamp = filter_var(trim($timestampHeader), FILTER_VALIDATE_INT);
+            if ($timestamp !== false && $timestamp > 0) {
+                return $timestamp;
+            }
+        }
+
+        // 备选：使用Date头
+        $dateHeader = $request->headers->get('Date');
+        if (is_string($dateHeader)) {
+            $date = \DateTime::createFromFormat(\DateTime::RFC7231, trim($dateHeader));
+            if ($date !== false) {
+                return $date->getTimestamp();
+            }
+        }
+
+        return null;
     }
 
     /**
