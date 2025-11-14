@@ -94,11 +94,49 @@ $client = $this->clientSelector->selectClientWithFallback('gpt-4', $context);
 - `/proxy/v1/models` - List available models
 - `/proxy/status` - Check proxy status
 
+## Environment Variables
+
+The bundle supports runtime configuration through environment variables:
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `OPENAI_PROXY_REFRESH_INTERVAL` | 300 | Client pool refresh interval (seconds) |
+| `OPENAI_PROXY_HEALTH_CHECK_TIMEOUT` | 2.0 | Health check timeout (seconds) |
+| `OPENAI_PROXY_DEFAULT_STRATEGY` | weighted_score | Default selection strategy |
+| `OPENAI_PROXY_DEFAULT_TIMEOUT` | 30 | Default request timeout (seconds) |
+| `OPENAI_PROXY_MAX_RETRIES` | 3 | Maximum retry attempts |
+
+### Selection Strategy Options
+
+- `weighted_score` - Weighted scoring (recommended)
+- `round_robin` - Round-robin selection
+- `random` - Random selection
+- `least_used` - Least used selection
+- `best_performance` - Best performance selection
+- `failover` - Failover selection
+
+### Runtime Override
+
+In addition to environment variables, some configurations can be overridden per request via HTTP headers:
+
+- `X-Proxy-Strategy`: Override selection strategy
+- `X-Proxy-Timeout`: Override timeout (seconds)
+
+```bash
+curl -X POST https://api.example.com/proxy/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "X-Proxy-Strategy: round_robin" \
+  -H "X-Proxy-Timeout: 120" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-4", "messages": [...]}'
+```
+
 ## Documentation
 
 - [Configuration Guide](docs/configuration.md)
 - [API Documentation](docs/api.md)
 - [Advanced Usage](docs/advanced.md)
+- [Environment Variables](docs/ENV_VARIABLES.md)
 
 ## Testing
 
